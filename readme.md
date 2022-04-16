@@ -221,7 +221,7 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
 
 > Riguardo la correttezza bisogna innanzitutto assicurarsi che le probabilità e il numero di step del problema combacino nei file *forest_corr_seq.c* e *forest_corr_par.c*, in seguito è necessario compilare ed eseguire entrambi, tramite i soliti comandi:
 
-    picc forest_corr_seq.c -o seq    
+    mpicc forest_corr_seq.c -o seq    
     mpicc forest_corr_par.c -o par
     mpirun --allow-run-as-root -np 1 seq N
     mpirun --allow-run-as-root -np P par N
