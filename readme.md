@@ -47,11 +47,11 @@ Il modello è definito come un automa cellulare su una griglia di NxN celle. Una
 > Per l'analisi della soluzione proposta viene seguito lo stesso scheletro del paragrafo 2.  
 Innanzitutto, vengono definite come MACRO le probabilità del modello:
 
->     #define ignite_prob 15  //A tree ignites with this probability (f), 0 <= ignite_prob <= 100  
->     #define grow_prob 0     //A tree grows on an empty cell with this probability (p), 0 <= grow_prob <= 100  
->     #define gen_prob 70     //Probability that a tree grows, used for the matrix generation, 0 <= gen_prob <= 100  
->     #define N 8             //Dimension of grid NxN  
->     #define S 25            //Number of steps  
+    #define ignite_prob 15  //A tree ignites with this probability (f), 0 <= ignite_prob <= 100  
+    #define grow_prob 0     //A tree grows on an empty cell with this probability (p), 0 <= grow_prob <= 100  
+    #define gen_prob 70     //Probability that a tree grows, used for the matrix generation, 0 <= gen_prob <= 100  
+    #define N 8             //Dimension of grid NxN  
+    #define S 25            //Number of steps  
 
 > La struttura dati scelta è una semplice matrice di char per rappresentare la griglia del modello, decisione ponderata per la facilità di adattabilità al problema e il minor peso (1 byte vs 4 byte per cella) rispetto ad una matrice di interi.
 
@@ -60,7 +60,7 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
 > Le prime considerazioni da effettuare sono sul numero di righe su cui ogni processo deve lavorare e sulla dimensione della sottomatrice da allocare. Inoltre, per permettere la distinzione tra i diversi passi discreti vengono utilizzate due matrici di dimensioni uguali: una per lettura ed una per scrittura, che alla fine di ogni passo vengono swappate tramite l'utilizzo dei puntatori.  
 > Ogni processo calcola dunque la dimensione della sua sottomatrice e il numero di righe su cui deve lavorare.
 
->     //partizionamento della matrice e allocazione sottomatrici
+    //partizionamento della matrice e allocazione sottomatrici
     R =  N % P;
     //calcolo numero di righe di ogni sottomatrice (nrows), primo ed ultimo processo ricevono una riga di confine in meno
     if (rank == 0 || rank == P-1){
@@ -73,7 +73,7 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
         nrows += 1;
     }
     
->     //assegnazione indici riga iniziale e finale delle sottomatrici di lavoro (righe di scrittura work_rows)
+    //assegnazione indici riga iniziale e finale delle sottomatrici di lavoro (righe di scrittura work_rows)
     if (rank == 0) {
         start_index = 0;
         work_rows = nrows - 1; 
@@ -91,8 +91,8 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
 
 > L'idea risolutiva del problema prevede questa suddivisione temporale in S passi discreti. All'inizio di ogni passo i processi comunicano tra loro per l'invio asincrono delle righe ai bordi, che dunque dipendono da altri processi, nel frattempo che le comunicazioni si concludano, ogni processo lavora sulle righe intermedie della matrice, per poi attendere la fine della comunicazione e lavorare sulla prima e ultima riga, appena ricevute tramite le comunicazioni.  
 > Per evitare spreco di memoria, sia le *Isend* che le *Irecv* vanno a leggere e scrivere direttamente la porzione di sottomatrice di interesse, permettendo di evitare l'utilizzo di ulteriori buffer.
-
->     //comunicazione con altri processi
+    
+    //comunicazione con altri processi
     if (rank == 0){
         //invio ultima riga al processo successivo
         MPI_Isend(&recv[work_rows*N - N], N, MPI_CHAR, rank+1, 0, MPI_COMM_WORLD, &request[0]);
@@ -112,7 +112,7 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
         MPI_Irecv(&recv[work_rows*N + N], N, MPI_CHAR, rank+1, 1, MPI_COMM_WORLD, &request[1]);
     }
     
->     //lavoro su righe non di confine, non dipendono da altri processi
+    //lavoro su righe non di confine, non dipendono da altri processi
     for(int i=start_index + 1; i<start_index + work_rows - 1; i++){
         for(int j=0; j<N; j++){
             if (recv[(i*N) + j] == 'E'){
@@ -126,9 +126,9 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
         }
     }
     
->     MPI_Waitall(2, request, MPI_STATUSES_IGNORE);    
+    MPI_Waitall(2, request, MPI_STATUSES_IGNORE);    
     
->     //lavora esclusivamente sulle righe di bordo ricevute dagli altri processi
+    //lavora esclusivamente sulle righe di bordo ricevute dagli altri processi
     int i = start_index;
     for(int j=0; j<N; j++){
         if (recv[(i*N) + j] == 'E'){
@@ -139,7 +139,7 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
             next[(i*N) + j] = 'E';
         }
         
->         if (next[(i*N) + j] == 'E')  empty_counter += 1;
+        if (next[(i*N) + j] == 'E')  empty_counter += 1;
     }
     i = start_index + work_rows - 1;
     for(int j=0; j<N; j++){
@@ -151,12 +151,12 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
             next[(i*N) + j] = 'E';
         }
         
->         if (next[(i*N) + j] == 'E')  empty_counter += 1;
+        if (next[(i*N) + j] == 'E')  empty_counter += 1;
     }
 
 > A seguire della computazione sulle sottomatrici viene effettuato un controllo per conoscere se lo stato dell'intera matrice, distribuita tra i diversi processi, è completamente vuota o meno. L'idea per risolvere questa problematica prevede l'utilizzo della *MPI_Reduce* dove la variabile *empty_counter* di ogni processo viene sommata e inviata al processo master, quest'ultimo, in base al valore della variabile, informa ai worker se la matrice è completamente vuota o meno attraverso una *MPI_Bcast*.
 
->     //controllo se tutte le celle sono vuote, ha senso solo quando grow prob -> 0
+    //controllo se tutte le celle sono vuote, ha senso solo quando grow prob -> 0
     MPI_Reduce(&empty_counter, &empty_matrix, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     if (rank == 0){
         if (empty_matrix == N*N){
@@ -221,21 +221,21 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
 
 > Riguardo la correttezza bisogna innanzitutto assicurarsi che le probabilità e il numero di step del problema combacino nei file *forest_corr_seq.c* e *forest_corr_par.c*, in seguito è necessario compilare ed eseguire entrambi, tramite i soliti comandi:
 
->     mpicc forest_corr_seq.c -o seq    
+    picc forest_corr_seq.c -o seq    
     mpicc forest_corr_par.c -o par
     mpirun --allow-run-as-root -np 1 seq N
     mpirun --allow-run-as-root -np P par N
         
 > Dove N è il numero di righe/colonne della matrice e P il numero di processi. Successivamente, verranno prodotti due file *.txt* contenenti le stampe della matrice lungo i diversi passi. Se si vuole automatizzare il controllo basta compilare il file *check_correctness.c* ed eseguirlo: quest'ultimo scandirà riga per riga i due file ed evidenzierà le differenze, se presenti.
 
->     gcc check_correctness.c -o check
+    gcc check_correctness.c -o check
     ./check
 
 ### &nbsp;&nbsp;5.2. Esecuzione benchmarks
 
 > Riguardo l'esecuzione dei file per i benchmarks è necessaria la compilazione dei file: *forest_bench_seq.c* e *forest_bench_par.c*, in seguito è necessario compilare ed eseguire entrambi, tramite i soliti comandi:
 
->     mpicc forest_bench_seq.c -o seq    
+    mpicc forest_bench_seq.c -o seq    
     mpicc forest_bench_par.c -o par
     mpirun --allow-run-as-root -np 1 seq N
     mpirun --allow-run-as-root -np P par N
@@ -275,7 +275,7 @@ N.B. Si ricorda che il problema prevede al più *S* passi discreti (quando la fo
 
 > Per quest'analisi vengono adottati i seguenti valori:
 
->     N = 3200 x 3200
+    N = 3200 x 3200
     #define ignite_prob 15  //A tree ignites with this probability (f), 0 <= ignite_prob <= 100    
     #define grow_prob 5     //A tree grows on an empty cell with this probability (p), 0 <= grow_prob <= 100   
     #define gen_prob 80     //Probability that a tree grows, used for the matrix generation, 0 <= gen_prob <= 100     
