@@ -19,7 +19,7 @@
 Il modello è definito come un automa cellulare su una griglia di NxN celle. Una cella può essere vuota, occupata da un albero o in fiamme. Il modello di Drossel e Schwabl (1992) è definito da quattro regole che vengono eseguite contemporaneamente: 
 > * Una cella in fiamme si trasforma in una cella vuota.
 > * Un albero va in fiamme se almeno un vicino sta bruciando.
-> * Un albero si infiamma con probabilità f anche se nessun vicino sta bruciando, probabilità di autocombustione.
+> * Un albero si infiamma con probabilità f anche se nessun vicino sta bruciando (probabilità di autocombustione).
 > * Uno spazio vuoto si riempie con un albero con probabilità p.
 
 > La simulazione si interrompe dopo un numero massimo di step S oppure quando l'intera griglia è vuota.
@@ -85,7 +85,7 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
         work_rows = nrows - 2;
     }  
     
-> Dopo il calcolo di queste informazioni si procede all'inizializzazione degli array necessari per l'utilizzo della *ScatterV* e della *GatherV* necessarie per la distribuzione e la raccolta delle matrici.
+> Dopo il calcolo di queste informazioni si procede all'inizializzazione degli array necessari per l'utilizzo della *ScatterV* e della *GatherV*, utilizzate per la distribuzione e la raccolta delle matrici.
 
 ### &nbsp;&nbsp;3.2. Esecuzione parallela
 
@@ -154,7 +154,7 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
         if (next[(i*N) + j] == 'E')  empty_counter += 1;
     }
 
-> A seguire della computazione sulle sottomatrici viene effettuato un controllo per conoscere se lo stato dell'intera matrice, distribuita tra i diversi processi, è completamente vuota o meno. L'idea per risolvere questa problematica prevede l'utilizzo della *MPI_Reduce* dove la variabile *empty_counter* di ogni processo viene sommata e inviata al processo master, quest'ultimo, in base al valore della variabile, informa ai worker se la matrice è completamente vuota o meno attraverso una *MPI_Bcast*.
+> A seguire della computazione sulle sottomatrici viene effettuato un controllo per conoscere se lo stato dell'intera matrice, distribuita tra i diversi processi, è completamente vuota o meno. L'idea per risolvere questa problematica prevede l'utilizzo della *MPI_Reduce*, dove la variabile *empty_counter* di ogni processo viene sommata e inviata al processo master, quest'ultimo, in base al valore della variabile, informa i worker se la matrice è completamente vuota o meno attraverso l'invio di un booleano grazie ad una *MPI_Bcast*.
 
     //controllo se tutte le celle sono vuote, ha senso solo quando grow prob -> 0
     MPI_Reduce(&empty_counter, &empty_matrix, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -179,7 +179,7 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
 > Per entrambe, le probabilità *p* ed *f* sono state abbassate a 0, per evitare di introdurre pseudo-casualità all'interno dei programmi, inoltre, la generazione della matrice iniziale è stata modificata inserendo lungo la diagonale principale solo celle in fiamme. Infine, al concludersi di ogni step viene scritta su un file la matrice di lavoro.  
 > La prima variante è una semplice implementazione sequenziale dell'algoritmo che scrive su file ad ogni passo discreto la matrice di lavoro.  
 > La seconda variante invece prevede l'esecuzione parallela dell'algoritmo anticipando la *MPI_GatherV* alla fine di ogni step, permettendo di salvare sul file la matrice di lavoro.   
-> Per automatizzare il confronto delle matrici (di grandi dimensioni) delle due versioni è stato scritto un piccolo script in C che verifica riga per riga i due file *.txt* creati dalle due varianti. Inoltre, sono state stampate delle emoji per rendere i file di testo generati meno pesanti da controllare manualmente. Di seguito un esempio del file generato da una matrice 4x4.
+> Infine, per automatizzare il confronto delle matrici (di grandi dimensioni) prodotte delle due versioni è stato scritto un piccolo script in C, che verifica riga per riga i due file *.txt* creati dalle due varianti. Inoltre, sono state stampate delle emoji per rendere i file di testo generati meno pesanti da controllare manualmente. Di seguito un esempio del file generato da una matrice 4x4.
 
 > Matrice iniziale  
 [🔥] [🌲] [🌲] [🌲]   
@@ -233,7 +233,7 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
 
 ### &nbsp;&nbsp;5.2. Esecuzione benchmarks
 
-> Riguardo l'esecuzione dei file per i benchmarks è necessaria la compilazione dei file: *forest_bench_seq.c* e *forest_bench_par.c*, in seguito è necessario compilare ed eseguire entrambi, tramite i soliti comandi:
+> Riguardo l'esecuzione dei file per i benchmarks è necessaria la compilazione dei file: *forest_bench_seq.c* e *forest_bench_par.c*, in seguito è necessario eseguire entrambi, tramite i soliti comandi:
 
     mpicc forest_bench_seq.c -o seq    
     mpicc forest_bench_par.c -o par
@@ -242,12 +242,12 @@ Innanzitutto, vengono definite come MACRO le probabilità del modello:
         
 > Dove N è il numero di righe/colonne della matrice e P il numero di processi.
 
-## 6. Benchmark e pricing
+## 6. Benchmark
 
 > Per la fase di benchmarking è stato testato il comportamento della soluzione proposta: sia in termini di scalabilità forte, dove la dimensione dell'input è costante e il numero di processori varia, sia in termini di scalabilità debole, con la dimensione dell'input costante per ogni processore. Le analisi sono state effettuate su un cluster GCP di 6 nodi (e2-standard-4), ognuno con 4 vCPU e 16GB di RAM. 
 > Inoltre, lo speedup analizzato è quello assoluto, dunque, viene previsto il rapporto tra il tempo di esecuzione sequenziale dell'algoritmo puramente sequenziale con quello parallelo. Si è scelto di procedere in questa maniera, senza analizzare lo speedup relativo, per mettere in evidenza la bontà della soluzione proposta rispetto alla capacità di parallelizzazione del problema.  
-> Dunque, si hanno due file: *forest_bench_par.c* e *forest_bench_seq.c* che prevedono solo la stampa del tempo di esecuzione e che sono stati utilizzati per effettuare i benchmarks. Per ottenere un'informazione più veritiera, i test (per ogni configurazione) sono stati ripetuti due o più volte effettuandone la media del tempo di esecuzione.
-> La dimensione del problema su cui effettuare l'analisi è stata individuata dopo una serie di esperimenti con una dimensione del problema variabile, di seguito sono riportate le scelte effettuate.    
+> Dunque, si hanno due file: *forest_bench_par.c* e *forest_bench_seq.c* che prevedono solo la stampa del tempo di esecuzione e che sono stati utilizzati per effettuare i benchmarks. Per ottenere un'informazione più consona e solida, i test (per ogni configurazione) sono stati ripetuti due o più volte, effettuando la media del tempo di esecuzione.
+> La dimensione del problema su cui effettuare l'analisi è stata individuata dopo una serie di esperimenti atti a cercare tempi di esecuzione né troppo esosi, evitando lunghe attese, né troppo brevi, rendendo inutile il calcolo parallelo, di seguito sono riportate le scelte effettuate.
 N.B. Si ricorda che il problema prevede al più *S* passi discreti (quando la foresta non brucia completamente), dunque, ponendo la probabilità di crescita di un albero all'interno di una cella vuota al 5% è stato scelto di avere al più *S=250* passi.
 
 <table border=1px align="center">
@@ -438,8 +438,8 @@ N.B. Si ricorda che il problema prevede al più *S* passi discreti (quando la fo
    </tbody>
 </table>
 
-> Dalla tabella sopra riportata dunque si evince uno speedup rallentato dall'overhead di comunicazione, che prevede ad ogni step lo scambio delle righe di confine e delle variabili necessarie per verificare che l'intera matrice sia vuota. Inoltre, come ci si aspettava, all'aumentare del numero di processi, il tempo di esecuzione decresce stabilmente appiattendosi verso la fine, sintomo dell'aumento dell'overhead di comunicazione rispetto alle righe da computare per ogni worker che invece decrescono.  
-Si può invece notare come l'efficienza sia stabile lungo le diverse esecuzioni, evidenziando un utilizzo quasi costante del singolo core.
+> Dalla tabella sopra riportata si evince uno speedup rallentato dall'overhead di comunicazione, che prevede ad ogni step lo scambio delle righe di confine e delle variabili necessarie per verificare che l'intera matrice sia vuota. Inoltre, come ci si aspettava, all'aumentare del numero di processi, il tempo di esecuzione decresce stabilmente appiattendosi verso la fine, sintomo dell'aumento dell'overhead di comunicazione rispetto alle righe da computare per ogni worker che invece decrescono.  
+Si può invece notare come l'efficienza sia stabile lungo le diverse esecuzioni, evidenziando un utilizzo quasi costante del singolo core, ciò dovuto al numero costante di elementi che vengono scambiati. Infatti, indipendentemente dal numero di processi, il processo i-esimo comunicherà sempre e solo 4 righe e la variabile *empty_counter*.
 
 <img src="images/strong_speed.png" alt="alt text" title="image Title" width="480" height="480" align="center"/>
 
@@ -585,6 +585,6 @@ Si può invece notare come l'efficienza sia stabile lungo le diverse esecuzioni,
 
 ## 7. Conclusioni
 
-> Per concludere, l'algoritmo giova sicuramente dalla parallelizzazione, anche se non appieno, ciò è dovuto alle comunicazioni che vengono effettuate ad ogni step e che limitano sicuramente quello che è lo speedup, di certo, evitando il controllo sulla matrice vuota si potrebbero ottenere dei miglioramenti. Per il resto, l'utilizzo di procedure non bloccanti ha permesso di ottenere comunque buoni risultati.
+> Per concludere, l'algoritmo giova sicuramente dalla parallelizzazione, anche se non appieno, ciò è dovuto alle comunicazioni che vengono effettuate ad ogni step e che limitano sicuramente quello che è lo speedup, di certo, evitando il controllo sull'assenza di alberi della matrice si potrebbero ottenere dei miglioramenti. Per il resto, l'utilizzo di procedure non bloccanti e strategie atte al "risparmio" di memoria ha permesso di ottenere comunque buoni risultati.
 
 
