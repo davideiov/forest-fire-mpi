@@ -37,7 +37,7 @@ Il modello è definito come un automa cellulare su una griglia di NxN celle. Una
         MPI_Cart_create(MPI_COMM_WORLD, dim, ndim, period, reorder, new_comm);
     }
     
-<img src="images/topology.png" alt="alt text" title="image Title" width="480" height="480" align="center"/>
+<img src="images/topology.png" alt="topology image" title="image Title" width="720" height="480" align="center"/>
 
 ### &nbsp;&nbsp;2.2. Esecuzione parallela
 
@@ -448,9 +448,9 @@ N.B. Si ricorda che il problema prevede al più *S* passi discreti (quando la fo
 > Dalla tabella sopra riportata si evince uno speedup rallentato dall'overhead di comunicazione, che prevede ad ogni step lo scambio delle righe di confine e delle variabili necessarie per verificare che l'intera matrice sia vuota. Inoltre, come ci si aspettava, all'aumentare del numero di processi, il tempo di esecuzione decresce stabilmente appiattendosi verso la fine, sintomo dell'aumento dell'overhead di comunicazione rispetto alle righe da computare per ogni worker che invece decrescono.  
 Si può invece notare come l'efficienza sia stabile lungo le diverse esecuzioni, evidenziando un utilizzo quasi costante del singolo core, ciò dovuto al numero costante di elementi che vengono scambiati. Infatti, indipendentemente dal numero di processi, il processo i-esimo comunicherà sempre e solo le 4 righe di confine e la variabile *empty_counter*.
 
-<img src="images/strong_speed.png" alt="alt text" title="image Title" width="480" height="480" align="center"/>
+<img src="images/strong_speed.png" alt="strong speedup image" title="image Title" width="480" height="480" align="center"/>
 
-<img src="images/strong_eff.png" alt="alt text" title="image Title" width="480" height="480" align="center"/>
+<img src="images/strong_eff.png" alt="strong efficiency image" title="image Title" width="480" height="480" align="center"/>
 
 ### &nbsp;&nbsp;6.2. Weak scalability
 
@@ -564,7 +564,7 @@ Si può invece notare come l'efficienza sia stabile lungo le diverse esecuzioni,
    </tbody>
 </table>
 
-<img src="images/weak_scal.png" alt="alt text" title="image Title" width="480" height="480" align="center"/>
+<img src="images/weak_scal.png" alt="weak scalability" title="image Title" width="480" height="480" align="center"/>
 
 ## 7. Conclusioni
 
