@@ -30,12 +30,14 @@ Il modello è definito come un automa cellulare su una griglia di NxN celle. Una
 
 ### &nbsp;&nbsp;2.1. Suddivisione della matrice
 > La distribuzione del carico prevede l'assegnazione equa della matrice da parte del processo master ai worker. L'idea alla base è di assegnare *(M/P)+1* righe ai processi *0* e *P-1*, mentre per i restanti processi vengono assegnate *(M/P)+2* righe,  dove M rappresenta il numero di righe della matrice e P il numero totale di processi. Inoltre, viene gestito il caso in cui P non sia multiplo di M, assegnando ai primi R processi una riga in più. Questo approccio è necessario per permettere ad ognuno di lavorare sulla prima e l'ultima riga della sottomatrice di lavoro, consultando quando necessario le celle appartenenti alle righe di confine degli altri processi.
-> Poiché si sta effettuando una suddivisione per righe della matrice, per velocizzare quanto più possibile le comunicazioni tra i processi è stata adottata una topologia cartesiana che permette un'organizzazione <b>logica</b> dei processi in una griglia bidimensionale, quest'ultimi, in questo caso,  sono stati disposti l'uno sotto l'altro esattamente come le porzioni della matrice originale, inoltre, grazie al parametro *reorder* si delega ad MPI la ricerca della migliore disposizione dei processi all'interno della topologia, aumentandone l'efficienza. Di seguito il codice che permette di avere questa griglia bidimensionale di P righe e 1 colonna.
+> Poiché si sta effettuando una suddivisione per righe della matrice, per velocizzare quanto più possibile le comunicazioni tra i processi è stata adottata una topologia cartesiana che permette un'organizzazione <b>logica</b> dei processi in una griglia bidimensionale, quest'ultimi, in questo caso,  sono stati disposti l'uno sotto l'altro esattamente come le porzioni della matrice originale, inoltre, grazie al parametro *reorder* si delega ad MPI la ricerca della migliore disposizione dei processi all'interno della topologia, aumentandone l'efficienza. Di seguito il codice che permette di avere una griglia bidimensionale di *nproc* righe e 1 colonna. Infine, un'immagine di esempio della topologia in relazione alla suddivisioned della matrice.
 
     void create_topology(int nproc, MPI_Comm *new_comm){
         int dim = 2, ndim[2] = {nproc, 1}, period[2] = {0, 0}, reorder = 1;
         MPI_Cart_create(MPI_COMM_WORLD, dim, ndim, period, reorder, new_comm);
     }
+    
+<img src="images/topology.png" alt="alt text" title="image Title" width="480" height="480" align="center"/>
 
 ### &nbsp;&nbsp;2.2. Esecuzione parallela
 
